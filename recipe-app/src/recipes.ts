@@ -1,0 +1,284 @@
+export const CATEGORIES = ['Pasta', 'Pizza', 'Meats'] as const;
+export type Category = (typeof CATEGORIES)[number];
+
+export const DIFFICULTIES = ['Easy', 'Medium', 'Hard'] as const;
+export type Difficulty = (typeof DIFFICULTIES)[number];
+
+export interface Recipe {
+  id: string;
+  name: string;
+  category: Category;
+  region: string;
+  minutes: number;
+  servings: number;
+  difficulty: Difficulty;
+  description: string;
+  /** One ingredient per line. */
+  ingredients: string;
+  /** One step per line. */
+  method: string;
+}
+
+export type RecipeDraft = Omit<Recipe, 'id'>;
+
+/** Splits the newline-delimited ingredient and method fields into display rows. */
+export const lines = (value: string): string[] =>
+  value
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
+
+export const seedRecipes: Recipe[] = [
+  {
+    id: 'cacio-e-pepe',
+    name: 'Cacio e Pepe',
+    category: 'Pasta',
+    region: 'Lazio',
+    minutes: 20,
+    servings: 2,
+    difficulty: 'Medium',
+    description:
+      'Three ingredients, no room to hide. Pecorino and black pepper emulsified with starchy pasta water.',
+    ingredients: [
+      '200 g tonnarelli or spaghetti',
+      '100 g Pecorino Romano, finely grated',
+      '2 tsp black peppercorns, coarsely cracked',
+      'Coarse salt for the pasta water',
+    ].join('\n'),
+    method: [
+      'Toast the cracked pepper in a dry pan until fragrant, then add a ladle of pasta water.',
+      'Cook the pasta in lightly salted water until very al dente, reserving a mug of the water.',
+      'Whisk the Pecorino with a little cooled pasta water into a smooth paste.',
+      'Toss the pasta into the peppered pan off the heat, then fold in the cheese paste until glossy.',
+    ].join('\n'),
+  },
+  {
+    id: 'carbonara',
+    name: 'Spaghetti alla Carbonara',
+    category: 'Pasta',
+    region: 'Lazio',
+    minutes: 25,
+    servings: 4,
+    difficulty: 'Medium',
+    description:
+      'Guanciale, egg yolks and Pecorino. No cream, no garlic, and the pan always comes off the heat first.',
+    ingredients: [
+      '400 g spaghetti',
+      '150 g guanciale, cut into thick strips',
+      '4 egg yolks plus 1 whole egg',
+      '80 g Pecorino Romano, grated',
+      'Black pepper',
+    ].join('\n'),
+    method: [
+      'Render the guanciale slowly until the fat is clear and the meat is crisp.',
+      'Beat the yolks, whole egg, Pecorino and plenty of pepper into a thick cream.',
+      'Cook the spaghetti until al dente and reserve a cup of the water.',
+      'Off the heat, combine pasta, guanciale fat and egg mixture, loosening with pasta water until silky.',
+    ].join('\n'),
+  },
+  {
+    id: 'pasta-alla-norma',
+    name: 'Pasta alla Norma',
+    category: 'Pasta',
+    region: 'Sicily',
+    minutes: 45,
+    servings: 4,
+    difficulty: 'Easy',
+    description:
+      'Fried aubergine, tomato and salted ricotta — Catania on a plate, finished with torn basil.',
+    ingredients: [
+      '400 g rigatoni',
+      '2 large aubergines, cubed',
+      '500 g passata',
+      '1 clove garlic',
+      '100 g ricotta salata, grated',
+      'Basil leaves',
+      'Olive oil for frying',
+    ].join('\n'),
+    method: [
+      'Salt the aubergine cubes, rest for 30 minutes, then pat dry and fry until deep gold.',
+      'Simmer the passata with garlic and a pinch of salt for 15 minutes.',
+      'Cook the rigatoni al dente and fold it through the sauce with most of the aubergine.',
+      'Top with the remaining aubergine, ricotta salata and torn basil.',
+    ].join('\n'),
+  },
+  {
+    id: 'tagliatelle-al-ragu',
+    name: 'Tagliatelle al Ragù',
+    category: 'Pasta',
+    region: 'Emilia-Romagna',
+    minutes: 210,
+    servings: 6,
+    difficulty: 'Hard',
+    description:
+      'The Bolognese original: a slow, milk-enriched meat sauce clinging to fresh egg tagliatelle.',
+    ingredients: [
+      '500 g fresh tagliatelle',
+      '300 g beef chuck, minced',
+      '150 g pancetta, finely chopped',
+      '1 carrot, 1 celery stalk, 1 onion, all finely diced',
+      '200 ml whole milk',
+      '150 ml dry white wine',
+      '400 g tomato passata',
+      'Parmigiano Reggiano to serve',
+    ].join('\n'),
+    method: [
+      'Sweat the soffritto in butter and oil until soft and sweet, about 15 minutes.',
+      'Add the pancetta and beef, browning thoroughly before deglazing with the wine.',
+      'Pour in the milk and let it be absorbed, then add the passata.',
+      'Simmer uncovered on the lowest heat for at least 3 hours, stirring occasionally.',
+      'Toss with fresh tagliatelle and finish with grated Parmigiano.',
+    ].join('\n'),
+  },
+  {
+    id: 'pizza-margherita',
+    name: 'Pizza Margherita',
+    category: 'Pizza',
+    region: 'Campania',
+    minutes: 90,
+    servings: 2,
+    difficulty: 'Medium',
+    description:
+      'Tomato, fiordilatte and basil on a blistered Neapolitan base. Bake as hot as your oven allows.',
+    ingredients: [
+      '500 g "00" flour',
+      '325 ml water',
+      '10 g salt',
+      '2 g fresh yeast',
+      '300 g San Marzano tomatoes, crushed by hand',
+      '250 g fiordilatte mozzarella, torn and drained',
+      'Basil and extra virgin olive oil',
+    ].join('\n'),
+    method: [
+      'Mix flour, water, salt and yeast, knead to a smooth dough and bulk ferment for 18 hours.',
+      'Divide into 250 g balls and prove for a further 4 hours.',
+      'Stretch by hand, leaving a raised rim, then top with tomato and torn mozzarella.',
+      'Bake at the highest temperature available until the crust is leopard-spotted.',
+      'Finish with basil and a thread of olive oil.',
+    ].join('\n'),
+  },
+  {
+    id: 'pizza-marinara',
+    name: 'Pizza Marinara',
+    category: 'Pizza',
+    region: 'Campania',
+    minutes: 80,
+    servings: 2,
+    difficulty: 'Easy',
+    description:
+      'The older, cheeseless Neapolitan pizza: tomato, garlic, oregano and very good olive oil.',
+    ingredients: [
+      '2 proved pizza dough balls, 250 g each',
+      '300 g San Marzano tomatoes, crushed',
+      '2 cloves garlic, thinly sliced',
+      'Dried oregano',
+      'Extra virgin olive oil',
+    ].join('\n'),
+    method: [
+      'Stretch each dough ball by hand on a floured surface.',
+      'Spread the crushed tomato to within a finger of the rim and season with salt.',
+      'Scatter the garlic and oregano, then drizzle generously with olive oil.',
+      'Bake as hot as possible until the rim puffs and chars in spots.',
+    ].join('\n'),
+  },
+  {
+    id: 'pizza-diavola',
+    name: 'Pizza Diavola',
+    category: 'Pizza',
+    region: 'Campania',
+    minutes: 85,
+    servings: 2,
+    difficulty: 'Easy',
+    description:
+      'Margherita with spicy salame piccante, which curls into little cups of chilli oil as it bakes.',
+    ingredients: [
+      '2 proved pizza dough balls, 250 g each',
+      '300 g crushed tomatoes',
+      '250 g fiordilatte mozzarella, torn',
+      '120 g salame piccante, thinly sliced',
+      'Chilli flakes and olive oil',
+    ].join('\n'),
+    method: [
+      'Stretch the dough and top with tomato, then mozzarella.',
+      'Lay the salame slices over the surface so they crisp in the heat.',
+      'Bake at maximum heat until the crust is set and blistered.',
+      'Finish with chilli flakes and a little olive oil.',
+    ].join('\n'),
+  },
+  {
+    id: 'ossobuco',
+    name: 'Ossobuco alla Milanese',
+    category: 'Meats',
+    region: 'Lombardy',
+    minutes: 150,
+    servings: 4,
+    difficulty: 'Hard',
+    description:
+      'Braised veal shanks with marrow intact, finished with a sharp lemon-and-parsley gremolata.',
+    ingredients: [
+      '4 veal shanks, about 4 cm thick',
+      'Flour for dusting',
+      '1 onion, finely chopped',
+      '200 ml dry white wine',
+      '400 ml veal or chicken stock',
+      'Zest of 1 lemon, 1 clove garlic and a handful of parsley for the gremolata',
+    ].join('\n'),
+    method: [
+      'Tie each shank around the middle so it holds shape, dust with flour and brown in butter.',
+      'Soften the onion in the same pan, then deglaze with the white wine.',
+      'Return the shanks, add stock to come halfway up, cover and braise gently for 2 hours.',
+      'Chop the lemon zest, garlic and parsley together and scatter over just before serving.',
+    ].join('\n'),
+  },
+  {
+    id: 'saltimbocca',
+    name: 'Saltimbocca alla Romana',
+    category: 'Meats',
+    region: 'Lazio',
+    minutes: 25,
+    servings: 4,
+    difficulty: 'Easy',
+    description:
+      'Veal escalopes under prosciutto and sage, pan-fried and deglazed with white wine in minutes.',
+    ingredients: [
+      '8 thin veal escalopes',
+      '8 slices prosciutto crudo',
+      '16 sage leaves',
+      '100 ml dry white wine',
+      '50 g butter',
+      'Flour for dusting',
+    ].join('\n'),
+    method: [
+      'Flatten the escalopes, then press a sage leaf and a slice of prosciutto onto each.',
+      'Dust the veal side lightly with flour.',
+      'Fry prosciutto-side down in foaming butter for a minute, then turn briefly.',
+      'Deglaze the pan with the wine, reduce to a glaze and spoon over the veal.',
+    ].join('\n'),
+  },
+  {
+    id: 'pollo-alla-cacciatora',
+    name: 'Pollo alla Cacciatora',
+    category: 'Meats',
+    region: 'Tuscany',
+    minutes: 75,
+    servings: 4,
+    difficulty: 'Easy',
+    description:
+      "The hunter's chicken: browned joints braised with rosemary, tomato and red wine until tender.",
+    ingredients: [
+      '1 chicken, jointed into 8 pieces',
+      '1 onion and 2 cloves garlic, chopped',
+      '2 sprigs rosemary',
+      '200 ml red wine',
+      '400 g chopped tomatoes',
+      'Black olives, optional',
+    ].join('\n'),
+    method: [
+      'Brown the chicken pieces skin-side down in olive oil, then set aside.',
+      'Soften the onion, garlic and rosemary in the same pan.',
+      'Deglaze with the red wine and let it reduce by half.',
+      'Add the tomatoes, return the chicken and simmer covered for 45 minutes.',
+      'Stir in the olives, if using, and season before serving.',
+    ].join('\n'),
+  },
+];

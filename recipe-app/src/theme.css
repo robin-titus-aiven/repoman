@@ -1,0 +1,145 @@
+/*
+ * Aquarium ships light values only, but it compiles every color utility as a
+ * literal value followed by an `--aquarium-*` custom property:
+ *
+ *   .bg-layer { background-color: rgba(255,255,255,1);
+ *               background-color: var(--aquarium-background-color-layer); }
+ *
+ * Defining those properties therefore reskins the whole component library
+ * without touching a single component.
+ */
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  background-color: var(--aquarium-background-color-body, rgba(255, 255, 255, 1));
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  /* Neutral ramp, inverted, so palette utilities stay coherent. */
+  --aquarium-colors-grey-0: rgba(22, 23, 26, 1);
+  --aquarium-colors-grey-5: rgba(31, 32, 33, 1);
+  --aquarium-colors-grey-10: rgba(45, 46, 48, 1);
+  --aquarium-colors-grey-20: rgba(68, 69, 71, 1);
+  --aquarium-colors-grey-30: rgba(104, 105, 107, 1);
+  --aquarium-colors-grey-40: rgba(145, 146, 148, 1);
+  --aquarium-colors-grey-50: rgba(181, 181, 183, 1);
+  --aquarium-colors-grey-60: rgba(225, 225, 225, 1);
+  --aquarium-colors-grey-70: rgba(235, 235, 235, 1);
+  --aquarium-colors-grey-80: rgba(244, 244, 244, 1);
+  --aquarium-colors-grey-90: rgba(250, 250, 250, 1);
+  --aquarium-colors-grey-100: rgba(255, 255, 255, 1);
+
+  /* Surfaces */
+  --aquarium-background-color-body: rgba(13, 14, 16, 1);
+  --aquarium-background-color-layer: rgba(22, 23, 26, 1);
+  --aquarium-background-color-overlay: rgba(22, 23, 26, 1);
+  --aquarium-background-color-popover-content: rgba(31, 32, 33, 1);
+  --aquarium-background-color-muted: rgba(31, 32, 33, 1);
+  --aquarium-background-color-default: rgba(45, 46, 48, 1);
+  --aquarium-background-color-medium: rgba(45, 46, 48, 1);
+  --aquarium-background-color-intense: rgba(68, 69, 71, 1);
+  --aquarium-background-color-inverse: rgba(244, 244, 244, 1);
+  --aquarium-background-color-body-intense: rgba(244, 244, 244, 1);
+  --aquarium-background-color-backdrop: rgb(from rgba(0, 0, 0, 1) r g b / 72%);
+  --aquarium-background-color-charts-overlay: rgba(22, 23, 26, 0.5);
+  --aquarium-background-color-icon-button-hover: rgba(255, 255, 255, 0.08);
+
+  /* Text */
+  --aquarium-text-color-default: rgba(244, 244, 244, 1);
+  --aquarium-text-color-intense: rgba(255, 255, 255, 1);
+  --aquarium-text-color-muted: rgba(168, 169, 172, 1);
+  --aquarium-text-color-inactive: rgba(104, 105, 107, 1);
+  --aquarium-text-color-opposite-default: rgba(13, 14, 16, 1);
+
+  /* Borders */
+  --aquarium-border-color-muted: rgba(48, 49, 52, 1);
+  --aquarium-border-color-default: rgba(68, 69, 71, 1);
+  --aquarium-border-color-intense: rgba(145, 146, 148, 1);
+
+  /* A near-black primary button would vanish on a near-black page, so the
+     primary action inverts along with `text-color-opposite-default`. */
+  --aquarium-background-color-action-primary-button-default: rgba(244, 244, 244, 1);
+  --aquarium-background-color-action-primary-button-hover: rgba(225, 225, 225, 1);
+  --aquarium-background-color-action-primary-button-active: rgba(181, 181, 183, 1);
+  --aquarium-background-color-action-primary-button-disabled: rgba(45, 46, 48, 1);
+
+  --aquarium-border-color-action-focus: rgba(46, 208, 205, 1);
+  --aquarium-border-color-action-secondary-button-default: rgba(46, 208, 205, 1);
+  --aquarium-border-color-action-secondary-button-hover: rgba(117, 230, 228, 1);
+  --aquarium-border-color-action-secondary-button-active: rgba(183, 242, 241, 1);
+  --aquarium-border-color-action-secondary-button-disabled: rgba(68, 69, 71, 1);
+
+  /* The brand teal has to brighten to stay legible on a dark surface. */
+  --aquarium-text-color-primary-default: rgba(46, 208, 205, 1);
+  --aquarium-text-color-primary-intense: rgba(117, 230, 228, 1);
+  --aquarium-text-color-primary-graphic: rgba(46, 208, 205, 1);
+  --aquarium-text-color-primary-muted: rgba(27, 178, 176, 1);
+  --aquarium-text-color-primary-active: rgba(183, 242, 241, 1);
+  --aquarium-text-color-primary-inactive: rgba(0, 92, 90, 1);
+  --aquarium-background-color-primary-muted: rgba(46, 208, 205, 0.16);
+  --aquarium-background-color-primary-default: rgba(46, 208, 205, 0.16);
+  --aquarium-background-color-primary-hover: rgba(46, 208, 205, 0.24);
+  --aquarium-background-color-primary-active: rgba(46, 208, 205, 0.24);
+  --aquarium-background-color-primary-graphic: rgba(46, 208, 205, 1);
+  --aquarium-background-color-primary-intense: rgba(46, 208, 205, 1);
+  --aquarium-background-color-primary-inverse: rgba(46, 208, 205, 1);
+  --aquarium-border-color-primary-muted: rgba(46, 208, 205, 0.4);
+  --aquarium-border-color-primary-default: rgba(46, 208, 205, 0.6);
+  --aquarium-border-color-primary-intense: rgba(117, 230, 228, 1);
+
+  /* Status families: the light pastel fills become translucent washes so they
+     sit on the dark surface instead of glaring against it. */
+  --aquarium-background-color-info-muted: rgba(43, 137, 214, 0.18);
+  --aquarium-background-color-info-default: rgba(43, 137, 214, 0.18);
+  --aquarium-background-color-status-info: rgba(43, 137, 214, 0.18);
+  --aquarium-text-color-info-default: rgba(137, 194, 235, 1);
+  --aquarium-text-color-info-intense: rgba(178, 216, 243, 1);
+  --aquarium-text-color-info-muted: rgba(98, 172, 233, 1);
+  --aquarium-text-color-info-inactive: rgba(98, 172, 233, 1);
+  --aquarium-border-color-info-muted: rgba(43, 137, 214, 0.45);
+  --aquarium-border-color-info-default: rgba(43, 137, 214, 0.6);
+  --aquarium-border-color-info-intense: rgba(137, 194, 235, 1);
+
+  --aquarium-background-color-success-muted: rgba(12, 168, 82, 0.18);
+  --aquarium-background-color-success-default: rgba(12, 168, 82, 0.18);
+  --aquarium-background-color-status-success: rgba(12, 168, 82, 0.18);
+  --aquarium-text-color-success-default: rgba(95, 250, 160, 1);
+  --aquarium-text-color-success-intense: rgba(178, 255, 210, 1);
+  --aquarium-text-color-success-muted: rgba(61, 235, 134, 1);
+  --aquarium-text-color-success-inactive: rgba(61, 235, 134, 1);
+  --aquarium-border-color-success-muted: rgba(12, 168, 82, 0.45);
+  --aquarium-border-color-success-default: rgba(12, 168, 82, 0.6);
+  --aquarium-border-color-success-intense: rgba(95, 250, 160, 1);
+
+  --aquarium-background-color-warning-muted: rgba(204, 139, 2, 0.2);
+  --aquarium-background-color-warning-default: rgba(204, 139, 2, 0.2);
+  --aquarium-background-color-status-warning: rgba(204, 139, 2, 0.2);
+  --aquarium-text-color-warning-default: rgba(255, 218, 133, 1);
+  --aquarium-text-color-warning-intense: rgba(255, 233, 179, 1);
+  --aquarium-text-color-warning-muted: rgba(255, 201, 77, 1);
+  --aquarium-text-color-warning-inactive: rgba(255, 201, 77, 1);
+  --aquarium-border-color-warning-muted: rgba(204, 139, 2, 0.45);
+  --aquarium-border-color-warning-default: rgba(204, 139, 2, 0.6);
+  --aquarium-border-color-warning-intense: rgba(255, 218, 133, 1);
+
+  --aquarium-background-color-danger-muted: rgba(217, 65, 65, 0.2);
+  --aquarium-background-color-danger-default: rgba(217, 65, 65, 0.2);
+  --aquarium-background-color-status-danger: rgba(217, 65, 65, 0.2);
+  --aquarium-text-color-danger-default: rgba(253, 164, 164, 1);
+  --aquarium-text-color-danger-intense: rgba(254, 205, 205, 1);
+  --aquarium-text-color-danger-muted: rgba(237, 85, 85, 1);
+  --aquarium-text-color-danger-inactive: rgba(237, 85, 85, 1);
+  --aquarium-border-color-danger-muted: rgba(217, 65, 65, 0.45);
+  --aquarium-border-color-danger-default: rgba(217, 65, 65, 0.6);
+  --aquarium-border-color-danger-intense: rgba(253, 164, 164, 1);
+
+  --aquarium-background-color-status-announcement: rgba(46, 208, 205, 0.16);
+}
