@@ -1,0 +1,6 @@
+# Keeps the host's node_modules (wrong platform) from overwriting the copy
+# installed inside the image during `COPY . .`.
+node_modules
+dist
+*.tsbuildinfo
+.git
