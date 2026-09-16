@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Box,
   Card,
@@ -18,11 +18,11 @@ import {
 import {
   CATEGORIES,
   lines,
-  seedRecipes,
   type Category,
   type Recipe,
   type RecipeDraft,
 } from './recipes';
+import * as api from './api';
 import { RecipeFormModal } from './RecipeFormModal';
 import { useColorScheme, type ColorScheme } from './useColorScheme';
 
@@ -30,11 +30,8 @@ type CategoryFilter = 'All' | Category;
 
 const TABS: CategoryFilter[] = ['All', ...CATEGORIES];
 
-const slugify = (name: string) =>
-  name
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)/g, '');
+const messageFor = (error: unknown) =>
+  error instanceof Error ? error.message : 'Something went wrong';
 
 function RecipeDetail({ recipe }: { recipe: Recipe }) {
   const steps = lines(recipe.method);
@@ -82,7 +79,9 @@ function RecipeDetail({ recipe }: { recipe: Recipe }) {
 
 export function App() {
   const { scheme, chooseScheme } = useColorScheme();
-  const [recipes, setRecipes] = useState<Recipe[]>(seedRecipes);
+  const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<CategoryFilter>('All');
   const [query, setQuery] = useState('');
 
@@ -90,7 +89,26 @@ export function App() {
   const [editing, setEditing] = useState<Recipe | null>(null);
   // Bumped on every open so the form remounts with fresh field values.
   const [formSession, setFormSession] = useState(0);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<Recipe | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  const loadRecipes = useCallback(async () => {
+    setLoading(true);
+    try {
+      setRecipes(await api.fetchRecipes());
+      setLoadError(null);
+    } catch (error) {
+      setLoadError(messageFor(error));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadRecipes();
+  }, [loadRecipes]);
 
   // The drawer animates itself out, so its content outlives `drawerOpen`.
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -117,6 +135,7 @@ export function App() {
 
   const openAddRecipe = () => {
     setEditing(null);
+    setSaveError(null);
     setFormSession((session) => session + 1);
     setFormOpen(true);
   };
@@ -129,6 +148,7 @@ export function App() {
   const openEditRecipe = (recipe: Recipe) => {
     setDrawerOpen(false);
     setEditing(recipe);
+    setSaveError(null);
     setFormSession((session) => session + 1);
     setFormOpen(true);
   };
@@ -136,64 +156,94 @@ export function App() {
   /** The drawer stacks above the dialog, so it has to give way before confirming. */
   const askToDelete = (recipe: Recipe) => {
     setDrawerOpen(false);
+    setDeleteError(null);
     setPendingDelete(recipe);
   };
 
-  const saveRecipe = (draft: RecipeDraft) => {
-    if (editing) {
-      const updated = { ...editing, ...draft };
-      setRecipes((current) =>
-        current.map((recipe) => (recipe.id === editing.id ? updated : recipe)),
-      );
-    } else {
-      setRecipes((current) => [
-        { id: `${slugify(draft.name)}-${Date.now()}`, ...draft },
-        ...current,
-      ]);
+  /** The row the server stored is what goes into state, ids and all. */
+  const saveRecipe = async (draft: RecipeDraft) => {
+    setSaving(true);
+    setSaveError(null);
+    try {
+      if (editing) {
+        const updated = await api.updateRecipe(editing.id, draft);
+        setRecipes((current) =>
+          current.map((recipe) => (recipe.id === updated.id ? updated : recipe)),
+        );
+        setViewing((current) =>
+          current?.id === updated.id ? updated : current,
+        );
+      } else {
+        const created = await api.createRecipe(draft);
+        setRecipes((current) => [created, ...current]);
+      }
+      setFormOpen(false);
+      setEditing(null);
+    } catch (error) {
+      // The modal stays open so the entered values survive a failed save.
+      setSaveError(messageFor(error));
+    } finally {
+      setSaving(false);
     }
-    setFormOpen(false);
-    setEditing(null);
   };
 
-  const deleteRecipe = () => {
-    if (pendingDelete) {
+  const deleteRecipe = async () => {
+    if (!pendingDelete) {
+      return;
+    }
+    try {
+      await api.deleteRecipe(pendingDelete.id);
       setRecipes((current) =>
         current.filter((recipe) => recipe.id !== pendingDelete.id),
       );
+      setPendingDelete(null);
+      setDrawerOpen(false);
+      setDeleteError(null);
+    } catch (error) {
+      setDeleteError(messageFor(error));
     }
-    setPendingDelete(null);
-    setDrawerOpen(false);
   };
 
-  const recipeGrid =
-    visibleRecipes.length === 0 ? (
-      <EmptyState
-        title={query.trim().length > 0 ? 'No matching recipes' : 'No recipes here yet'}
-        fullHeight={false}
-        primaryAction={{ text: 'Add recipe', onClick: openAddRecipe }}
-      >
-        {query.trim().length > 0
-          ? 'Try a different name, region or ingredient.'
-          : 'Add your first dish in this category to get started.'}
-      </EmptyState>
-    ) : (
-      <Grid gap="4">
-        {visibleRecipes.map((recipe) => (
-          <Grid.Item key={recipe.id} xs={12} sm={6} lg={4}>
-            <Card
-              fullWidth
-              title={recipe.name}
-              clampTitle={1}
-              chips={[recipe.category, `${recipe.minutes} min`, recipe.difficulty]}
-              primaryAction={{ text: 'View recipe', onClick: () => openRecipe(recipe) }}
-              secondaryAction={{ text: 'Edit', onClick: () => openEditRecipe(recipe) }}
-            >
-              {recipe.description}
-            </Card>
-          </Grid.Item>
-        ))}
-      </Grid>
-    );
+  const recipeGrid = loading ? (
+    <EmptyState title="Loading recipes…" fullHeight={false}>
+      Fetching your collection from the database.
+    </EmptyState>
+  ) : loadError !== null ? (
+    <EmptyState
+      title="Could not load your recipes"
+      fullHeight={false}
+      primaryAction={{ text: 'Try again', onClick: () => void loadRecipes() }}
+    >
+      {loadError}
+    </EmptyState>
+  ) : visibleRecipes.length === 0 ? (
+    <EmptyState
+      title={query.trim().length > 0 ? 'No matching recipes' : 'No recipes here yet'}
+      fullHeight={false}
+      primaryAction={{ text: 'Add recipe', onClick: openAddRecipe }}
+    >
+      {query.trim().length > 0
+        ? 'Try a different name, region or ingredient.'
+        : 'Add your first dish in this category to get started.'}
+    </EmptyState>
+  ) : (
+    <Grid gap="4">
+      {visibleRecipes.map((recipe) => (
+        <Grid.Item key={recipe.id} xs={12} sm={6} lg={4}>
+          <Card
+            fullWidth
+            title={recipe.name}
+            clampTitle={1}
+            chips={[recipe.category, `${recipe.minutes} min`, recipe.difficulty]}
+            primaryAction={{ text: 'View recipe', onClick: () => openRecipe(recipe) }}
+            secondaryAction={{ text: 'Edit', onClick: () => openEditRecipe(recipe) }}
+          >
+            {recipe.description}
+          </Card>
+        </Grid.Item>
+      ))}
+    </Grid>
+  );
 
   return (
     <Box paddingX="l2" paddingY="l1">
@@ -245,6 +295,8 @@ export function App() {
         key={formSession}
         open={formOpen}
         recipe={editing}
+        saving={saving}
+        submitError={saveError}
         onClose={() => {
           setFormOpen(false);
           setEditing(null);
@@ -273,12 +325,13 @@ export function App() {
         open={pendingDelete !== null}
         onClose={() => setPendingDelete(null)}
         title="Delete this recipe?"
-        primaryAction={{ text: 'Delete recipe', onClick: deleteRecipe }}
+        primaryAction={{ text: 'Delete recipe', onClick: () => void deleteRecipe() }}
         secondaryAction={{ text: 'Cancel', onClick: () => setPendingDelete(null) }}
       >
-        {pendingDelete
-          ? `${pendingDelete.name} will be removed from your collection. This cannot be undone.`
-          : ''}
+        {deleteError ??
+          (pendingDelete
+            ? `${pendingDelete.name} will be removed from your collection. This cannot be undone.`
+            : '')}
       </Dialog>
     </Box>
   );

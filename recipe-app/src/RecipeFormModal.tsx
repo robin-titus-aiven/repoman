@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Box, Grid, Input, Modal, Select, Textarea } from '@aivenio/aquarium';
+import { Alert, Box, Grid, Input, Modal, Select, Textarea } from '@aivenio/aquarium';
 import {
   CATEGORIES,
   DIFFICULTIES,
@@ -75,11 +75,22 @@ interface Props {
   open: boolean;
   /** The recipe being edited, or null when adding a new one. */
   recipe: Recipe | null;
+  /** True while the save request is in flight. */
+  saving: boolean;
+  /** A failed save, reported by the server. */
+  submitError: string | null;
   onClose: () => void;
   onSave: (draft: RecipeDraft) => void;
 }
 
-export function RecipeFormModal({ open, recipe, onClose, onSave }: Props) {
+export function RecipeFormModal({
+  open,
+  recipe,
+  saving,
+  submitError,
+  onClose,
+  onSave,
+}: Props) {
   // Seeded at mount: the caller remounts this component for each open, and Aquarium's
   // character counters only read their field's length once.
   const [values, setValues] = useState<FormValues>(() =>
@@ -125,8 +136,9 @@ export function RecipeFormModal({ open, recipe, onClose, onSave }: Props) {
           : 'Add a dish to your Italian collection.'
       }
       primaryAction={{
-        text: recipe ? 'Save changes' : 'Add recipe',
+        text: saving ? 'Saving…' : recipe ? 'Save changes' : 'Add recipe',
         actionKey: recipe ? 'save' : 'create',
+        disabled: saving,
         // The footer renders outside the body, so the form is submitted through its ref.
         onClick: () => formRef.current?.requestSubmit(),
       }}
@@ -136,6 +148,10 @@ export function RecipeFormModal({ open, recipe, onClose, onSave }: Props) {
         {/* Each labelled field already reserves ~27px below itself for helper
             text, so the stack only needs a small gap on top of that. */}
         <Box.Flex flexDirection="column" gap="3">
+          {submitError !== null && (
+            <Alert type="error">{submitError}</Alert>
+          )}
+
           <Input
             labelText="Recipe name"
             placeholder="Cacio e Pepe"

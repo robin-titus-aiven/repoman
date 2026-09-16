@@ -1,23 +1,28 @@
-# Cucina is a static Vite bundle, so the image builds it and then hands the
-# output to nginx. `vite preview` is a dev convenience and not a production
-# server, which is why it isn't used here.
+# Cucina is one process: Express serves the compiled API and the built Vite
+# bundle from the same port, so the deployment stays a single Aiven service.
 
 FROM node:22-alpine AS build
 WORKDIR /app
 
-# Manifests are copied first so the install layer caches independently of the
-# source. The lockfile is globbed so the build still works without it, but when
-# it is present npm resolves from it — which matters here, because Aquarium's
-# bundle depends on specific @react-aria entry-point versions.
-COPY package.json package-lock.json* ./
-RUN npm install
+# Manifests first so the install layer caches independently of the source. The
+# lockfile matters here because Aquarium's bundle depends on specific
+# @react-aria entry-point versions.
+COPY package.json package-lock.json ./
+RUN npm ci
 
 COPY . .
 RUN npm run build
 
-FROM nginx:1.27-alpine
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-COPY --from=build /app/dist /usr/share/nginx/html
+FROM node:22-alpine
+WORKDIR /app
+ENV NODE_ENV=production
+
+# Reinstalled rather than copied from the build stage so devDependencies and
+# the build cache stay out of the runtime image.
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev && npm cache clean --force
+
+COPY --from=build /app/dist ./dist
 
 EXPOSE 8080
-CMD ["nginx", "-g", "daemon off;"]
+CMD ["node", "dist/server/index.js"]
