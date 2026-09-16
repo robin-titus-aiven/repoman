@@ -9,7 +9,7 @@ WORKDIR /app
 # `npm install` rather than `npm ci`: the lockfile is generated on macOS/arm64
 # and omits Rollup's linux-musl binary, which `npm ci` would then refuse to
 # add, breaking the Vite build on Alpine.
-COPY package.json package-lock.json ./
+COPY package.json package-lock.json* ./
 RUN npm install
 
 COPY . .
@@ -21,7 +21,7 @@ ENV NODE_ENV=production
 
 # Reinstalled rather than copied from the build stage so devDependencies and
 # the build cache stay out of the runtime image.
-COPY package.json package-lock.json ./
+COPY package.json package-lock.json* ./
 RUN npm install --omit=dev && npm cache clean --force
 
 COPY --from=build /app/dist ./dist
