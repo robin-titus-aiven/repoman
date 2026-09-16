@@ -26,5 +26,9 @@ RUN npm install --omit=dev && npm cache clean --force
 
 COPY --from=build /app/dist ./dist
 
+# Resolved as ../../aiven-ca.pem from dist/server/db.js. The project CA's public
+# certificate, so it belongs in the image rather than the service config.
+COPY aiven-ca.pem ./
+
 EXPOSE 8080
 CMD ["node", "dist/server/index.js"]
