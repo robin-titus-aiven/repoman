@@ -5,10 +5,12 @@ FROM node:22-alpine AS build
 WORKDIR /app
 
 # Manifests first so the install layer caches independently of the source. The
-# lockfile matters here because Aquarium's bundle depends on specific
-# @react-aria entry-point versions.
+# lockfile pins Aquarium's @react-aria entry-point versions, but the install is
+# `npm install` rather than `npm ci`: the lockfile is generated on macOS/arm64
+# and omits Rollup's linux-musl binary, which `npm ci` would then refuse to
+# add, breaking the Vite build on Alpine.
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN npm install
 
 COPY . .
 RUN npm run build
@@ -20,7 +22,7 @@ ENV NODE_ENV=production
 # Reinstalled rather than copied from the build stage so devDependencies and
 # the build cache stay out of the runtime image.
 COPY package.json package-lock.json ./
-RUN npm ci --omit=dev && npm cache clean --force
+RUN npm install --omit=dev && npm cache clean --force
 
 COPY --from=build /app/dist ./dist
 
