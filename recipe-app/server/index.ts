@@ -163,7 +163,14 @@ app.delete('/api/recipes/:id', async (req, res) => {
 
 // The built frontend, with the single-page-app fallback nginx used to provide.
 app.use(express.static(STATIC_ROOT));
-app.get('*', (_req, res) => {
+
+// Express 5 dropped the bare '*' route, so the fallback is plain middleware.
+// Unmatched API paths still answer JSON rather than the app shell.
+app.use((req, res) => {
+  if (req.path.startsWith('/api/')) {
+    res.status(404).json({ error: 'No such endpoint' });
+    return;
+  }
   res.sendFile(path.join(STATIC_ROOT, 'index.html'));
 });
 
