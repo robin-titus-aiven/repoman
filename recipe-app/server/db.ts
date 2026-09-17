@@ -74,10 +74,27 @@ const ssl = (): ConnectionOptions => {
   );
 };
 
-export const pool = new pg.Pool({
-  connectionString: connectionString(),
-  ssl: ssl(),
-  max: 5,
-  idleTimeoutMillis: 30_000,
-  connectionTimeoutMillis: 10_000,
-});
+let pool: pg.Pool | null = null;
+
+/**
+ * Built on first use rather than at import time. A missing DATABASE_URL or CA
+ * is worth reporting through /api/health; throwing while the module loads
+ * would instead kill the process before it could serve anything at all.
+ */
+export function getPool(): pg.Pool {
+  if (pool === null) {
+    pool = new pg.Pool({
+      connectionString: connectionString(),
+      ssl: ssl(),
+      max: 5,
+      idleTimeoutMillis: 30_000,
+      connectionTimeoutMillis: 10_000,
+    });
+    // An idle client dropped by the server emits here, and an unhandled pool
+    // error would take the process down with it.
+    pool.on('error', (error) => {
+      console.error('Idle database client error', error);
+    });
+  }
+  return pool;
+}

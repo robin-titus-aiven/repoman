@@ -1,5 +1,5 @@
 import type { PoolClient } from 'pg';
-import { pool } from './db.js';
+import { getPool } from './db.js';
 import { seedRecipes } from './seed.js';
 import {
   CATEGORIES,
@@ -27,7 +27,7 @@ const asList = (values: readonly string[]) =>
  * genuinely empty table. Safe to run on every boot.
  */
 export async function initialiseSchema(): Promise<void> {
-  const client = await pool.connect();
+  const client = await getPool().connect();
   try {
     await client.query(`CREATE SCHEMA IF NOT EXISTS ${SCHEMA}`);
     await client.query(`
@@ -84,7 +84,7 @@ async function seed(client: PoolClient): Promise<void> {
 }
 
 export async function listRecipes(): Promise<Recipe[]> {
-  const { rows } = await pool.query<Recipe>(
+  const { rows } = await getPool().query<Recipe>(
     `SELECT ${COLUMNS} FROM ${SCHEMA}.recipes ORDER BY created_at DESC, name ASC`,
   );
   return rows;
@@ -94,7 +94,7 @@ export async function createRecipe(
   id: string,
   draft: RecipeDraft,
 ): Promise<Recipe> {
-  const { rows } = await pool.query<Recipe>(
+  const { rows } = await getPool().query<Recipe>(
     `INSERT INTO ${SCHEMA}.recipes (${COLUMNS})
      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
      RETURNING ${COLUMNS}`,
@@ -119,7 +119,7 @@ export async function updateRecipe(
   id: string,
   draft: RecipeDraft,
 ): Promise<Recipe | null> {
-  const { rows } = await pool.query<Recipe>(
+  const { rows } = await getPool().query<Recipe>(
     `UPDATE ${SCHEMA}.recipes SET
        name = $2, category = $3, region = $4, minutes = $5, servings = $6,
        difficulty = $7, description = $8, ingredients = $9, method = $10,
@@ -143,7 +143,7 @@ export async function updateRecipe(
 }
 
 export async function deleteRecipe(id: string): Promise<boolean> {
-  const result = await pool.query(
+  const result = await getPool().query(
     `DELETE FROM ${SCHEMA}.recipes WHERE id = $1`,
     [id],
   );

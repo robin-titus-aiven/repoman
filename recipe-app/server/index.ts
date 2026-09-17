@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import express from 'express';
-import { pool } from './db.js';
+import { getPool } from './db.js';
 import {
   createRecipe,
   deleteRecipe,
@@ -25,6 +25,16 @@ const STATIC_ROOT = path.join(
 
 const app = express();
 app.use(express.json({ limit: '64kb' }));
+
+type DatabaseState =
+  | { status: 'connecting' }
+  | { status: 'ready' }
+  | { status: 'failed'; error: string };
+
+let database: DatabaseState = { status: 'connecting' };
+
+const describe = (error: unknown): string =>
+  error instanceof Error ? error.message : String(error);
 
 const text = (value: unknown): string => (typeof value === 'string' ? value.trim() : '');
 
@@ -95,13 +105,45 @@ const slugify = (name: string) =>
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/(^-|-$)/g, '');
 
+/**
+ * Reports the underlying error rather than a generic failure. Misconfiguration
+ * is otherwise invisible from outside the container, and the messages involved
+ * name a host at worst — the connection string is never echoed.
+ */
 app.get('/api/health', async (_req, res) => {
-  try {
-    await pool.query('SELECT 1');
-    res.json({ status: 'ok', database: 'reachable' });
-  } catch {
-    res.status(503).json({ status: 'degraded', database: 'unreachable' });
+  if (database.status !== 'ready') {
+    res.status(503).json({
+      status: 'degraded',
+      database: database.status,
+      ...(database.status === 'failed' && { error: database.error }),
+    });
+    return;
   }
+
+  try {
+    await getPool().query('SELECT 1');
+    res.json({ status: 'ok', database: 'reachable' });
+  } catch (error) {
+    res.status(503).json({
+      status: 'degraded',
+      database: 'unreachable',
+      error: describe(error),
+    });
+  }
+});
+
+/** Answers 503 with the reason until the schema is in place. */
+app.use('/api/recipes', (_req, res, next) => {
+  if (database.status === 'ready') {
+    next();
+    return;
+  }
+  res.status(503).json({
+    error:
+      database.status === 'connecting'
+        ? 'Connecting to the database, one moment.'
+        : `Database unavailable: ${database.error}`,
+  });
 });
 
 app.get('/api/recipes', async (_req, res) => {
@@ -174,15 +216,39 @@ app.use((req, res) => {
   res.sendFile(path.join(STATIC_ROOT, 'index.html'));
 });
 
-async function start() {
-  await initialiseSchema();
-  // 0.0.0.0 rather than localhost, or the container would be unreachable.
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Cucina listening on 0.0.0.0:${PORT}`);
-  });
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const RETRY_CEILING_MS = 30_000;
+
+/**
+ * Keeps trying, backing off to every 30s. A database that is briefly
+ * unreachable resolves itself, and one that is misconfigured keeps saying so
+ * through /api/health instead of leaving an unexplained dead container.
+ */
+async function connectInBackground(): Promise<void> {
+  for (let attempt = 1; ; attempt += 1) {
+    try {
+      await initialiseSchema();
+      database = { status: 'ready' };
+      console.log('Database ready');
+      return;
+    } catch (error) {
+      database = { status: 'failed', error: describe(error) };
+      const wait = Math.min(1000 * 2 ** (attempt - 1), RETRY_CEILING_MS);
+      console.error(
+        `Database unavailable (attempt ${attempt}): ${database.error}. ` +
+          `Retrying in ${Math.round(wait / 1000)}s`,
+      );
+      await delay(wait);
+    }
+  }
 }
 
-start().catch((error) => {
-  console.error('Failed to start', error);
-  process.exit(1);
+// Listening comes first, so a database problem surfaces as a diagnosable
+// response instead of a container that exits before it can serve anything.
+// 0.0.0.0 rather than localhost, or the container would be unreachable.
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Cucina listening on 0.0.0.0:${PORT}`);
 });
+
+void connectInBackground();
